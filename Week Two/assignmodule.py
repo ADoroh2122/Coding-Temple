@@ -10,7 +10,7 @@ def square_footage_house(l, w):
 # Has a function to calculate the circumference of a circle
 
 def circumference_of_a_circle(radius):
-    return round(2 * 3.141592653 * radius, 2)
+    return 2 * 3.141592653 * radius
 
 # Has a function to change feet to inches
 
