@@ -741,13 +741,19 @@ to generate a box-plot, we can use the `geom_boxplot()` function in
 conjunction with our `ggplot()` library
 
 ```{r}
-
+ggplot(myplot, aes(class, hwy)) +
+  geom_boxplot()
 ```
 
 #### Customizing a box-plot
 
 ```{r}
-
+ggplot(myplot, aes(class, hwy)) +
+  geom_boxplot(fill = '#336699', color = '#336699', alpha = 0.7) +
+  geom_jitter(width = 0.2, height = 0, color = '#FFA550', alpha = 0.7) +
+  labs(title = 'High MPG by Car Class', x = 'Car Class', y = 'Highway MPG') +
+  theme_bw() +
+  coord_flip()
 ```
 
 ## In-Class Exercise 4:
@@ -759,11 +765,21 @@ creating the graphic. Your graphic should include colors, a title for
 all axes and for the graphic itself.
 
 ```{r}
-
+Lahman::AllstarFull
+?AllstarFull
 ```
 
 ```{r}
 
+```
+
+```{r}
+ggplot(Lahman::AllstarFull, aes(yearID, teamID)) +
+  geom_boxplot(fill = '#336699', color = '#336699', alpha = 0.7) +
+  geom_jitter(width = 0.2, height = 0, color = '#FFA550', alpha = 0.7) +
+  labs(title = 'Allstar Games by Year', x = 'yearID', y = 'teamID') +
+  theme_bw() +
+  
 ```
 
 ## Vizulations Cont.
@@ -771,11 +787,28 @@ all axes and for the graphic itself.
 #### Map Data
 
 ```{r}
+nz <- map_data('nz') 
 
+ggplot(nz, aes(long, lat, group = group)) +
+
+geom_polygon()
 ```
 
 ```{r}
+nz <- map_data('nz') 
 
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon() +
+  coord_quickmap()
+```
+
+```{r}
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'white', color = 'black') +
+  coord_quickmap() +
+  labs(x = 'Longitude', y='Latitude', title = 'Map of New Zealand') +
+  theme(axis.title = element_text(size=10))
+       
 ```
 
 #### Customize a map
@@ -847,7 +880,13 @@ follows: `apply(X, MARGIN, FUN)` where X is the data set to use, MARGIN
 is specification for rows or columns, and FUN is the function to apply.
 
 ```{r}
+test_mat <- matrix(c(1,1,1,2,2,2), nrow=2)
 
+test_mat
+
+apply(test_mat, 2, sum)
+# 1 means rows
+# 2 means columns
 ```
 
 It is common to use `mean`, `median`, `sum`, `min`, or `max` with
@@ -855,7 +894,10 @@ It is common to use `mean`, `median`, `sum`, `min`, or `max` with
 that apply() only works with matrices.
 
 ```{r}
+test_temp_mat <- matrix(test_temps, nrow=2)
+test_temp_mat
 
+apply(test_temp_mat, 1, c_to_f)
 ```
 
 #### More Functions!
@@ -863,12 +905,21 @@ that apply() only works with matrices.
 Now, let's create a function to check if a number is even or odd!
 
 ```{r}
+check_num <- function(n) {
+  if (n %% 2 ==0){
+    return('Even')
+    } else {
+      return('Odd')
+  }
+}
 
+check_num(5)
 ```
 
 Next, let's calculate a factorial:
 
 ```{r}
+# 5! = 5*4*3*2*1
 calc_factorial <- function(x){
   if (x < 0){
     print('Factorial is not defined for negative numbers')
@@ -888,11 +939,43 @@ calc_factorial(5)
 What if we wanted to use a function on a vector?:
 
 ```{r}
+calc_mean <- function(x){
+  # Base case: What if the vector is empty
+  if(length(x) == 0) {
+    print('Cannot calculate the mean of an empty vector!')
+  } else {
+    sum <- 0
+    for (i in 1:length(x)){
+      sum <- sum + x[i]
+    }
+    return(paste('Mean of our vector is:', sum/length(x)))
+  }
+}
 
+calc_mean(c(2,4,6))
+calc_mean(c(1,3,5))
+calc_mean(c())
 ```
 
 ```{r}
+calc_max <- function(x){
+  # Base case: What if the vector is empty
+  if(length(x) == 0) {
+    print('Cannot calculate the max of an empty vector!')
+  } else {
+    max <- x[1]
+    for (i in 2:length(x)){
+      if(x[i] > max){
+      max <- x[i]
+      }
+    }
+    return(paste('The max of our vector is:', max))
+  }
+}
 
+calc_max(c(2,4,6))
+calc_max(c(1,3,5))
+calc_max(c())
 ```
 
 ## In Class Exercise 5:
@@ -911,12 +994,21 @@ Test it using a positive and negative number as well as 0.
 The basic syntax for an if statement goes like this:
 
 ```{r}
-
+#if(logical statement) {
+  #do something
+#}
 ```
 
 The logical statements should boil down to a boolean; for example:
 
 ```{r}
+a <- 10
+
+if (a<=5){
+  print(a)
+} else{
+  print('The value was greater than 5')
+}
 
 ```
 
@@ -924,13 +1016,31 @@ We can also add else if statements in the middle if we need more
 options.
 
 ```{r}
+b <- 10
+
+if(b<=5){
+  print('small number')
+ } else if (b>5 & b <=10){
+    print('medium number')
+ } else {
+   print('large number')
+ }
+  
 
 ```
 
 We can also nest conditionals just like we do in Python.
 
 ```{r}
+c <- 5
 
+if(c/2 != 0){
+  if (c==5){
+    if(c<10){
+      print('c is the value of 5')
+    }
+  }
+}
 ```
 
 Nested ifelse statement: This is a powerful way to evaluate multiple
@@ -939,7 +1049,8 @@ ifelse statements is ifelse(condition1, value1, ifelse(condition2,
 value2, ifelse(condition3, value3, value4))). Here is an example:
 
 ```{r}
-
+x <- 10
+ifelse(x<5, 'low', ifelse(x<10, 'medium', 'high'))
 ```
 
 Switch statement: The switch statement is similar to a series of ifelse
@@ -947,6 +1058,10 @@ statements but can be more efficient and easier to read. The syntax is
 switch(expression, value1, value2, ..., valueN).
 
 ```{r}
+z <- c(1,2,3,4)
+for (x in z){
+  print(switch(x, 'summer', 'fall', 'winter', 'spring'))
+}
 
 ```
 
@@ -960,7 +1075,9 @@ One thing to note here, is that case_when is associated with your
 `tidyverse` library pre-loaded.
 
 ```{r}
+x <- 11
 
+case_when(x<5 ~ 'low', x<=10 ~ 'medium', TRUE ~ 'high')
 ```
 
 Short-circuit evaluation: Short-circuit evaluation is a way to evaluate
@@ -969,7 +1086,12 @@ condition if the first condition is true. The syntax is condition1 &&
 condition2.
 
 ```{r}
-
+if(x<5 || x >20){
+  print('out of range')
+} else{
+  print('in range')
+}
+  
 ```
 
 ## In Class Exercise 6:
@@ -978,7 +1100,11 @@ Create two vectors of numbers. Using a conditional statement, change the
 value for the vectors into a character type:
 
 ```{r}
+x <- c(1,2,3,4,5)
 
+if(length(x) > 0){
+  case_when(x==1 ~ 'one', x==2 ~ 'two', x ==3 ~ 'three', x==4 ~ 'four', TRUE ~ 'five')
+}
 ```
 
 Now, let's look at another core part of R programming - Loops!
@@ -986,38 +1112,69 @@ Now, let's look at another core part of R programming - Loops!
 ### Loops
 
 ```{r}
-
+for (val in x){
+  do something
+}
 ```
 
 ```{r}
-
+for (value in 1:5){
+  print(paste(value, 'is greated than', value -1))
+}
 ```
 
 We can also do nifty stuff with our vectors, such as apply changes to
 specific indices of our data.
 
 ```{r}
+vec <- c(1,1,1,1,1,1,1,1)
 
+#Change the first, third and sixth elements to the value of 6:
+for(i in c(1,3,6)){
+  vec[i] <- 6
+}
+vec
 ```
 
 We can loop over more than just lists:
 
 ```{r}
-
+mat <- matrix(1, nrow=5, ncol=5)
+for (row in 1:3){
+  for (col in 3:5){
+    mat[row,col] = 15
+  }
+}
+mat
 ```
 
 ```{r}
+mat <- matrix(1:12, ncol=4)
+means <- numeric(nrow(mat))
+means
 
+for (i in 1:nrow(mat)){
+  means[i] <- mean(mat[i,])
+}
+means
 ```
 
 ```{r}
+mat <- matrix(1:12, ncol=4)
+sums <- numeric(nrow(mat))
 
+for (i in 1:nrow(mat)){
+  sums[i] <- sum(mat[i,])
+}
+sums
 ```
 
 Like Python, we have while loops in R:
 
 ```{r}
-
+while (condition){
+  do something
+}
 ```
 
 ## In Class Exercise 7:
@@ -1025,7 +1182,14 @@ Like Python, we have while loops in R:
 Write a while loop that calculates the sum of the numbers 1-10:
 
 ```{r}
-
+x <- 1:10
+y <- 0
+for(val in x){
+  while(y <= sum(x)){
+    y <- y+val
+  }
+}
+y
 ```
 
 ## Tibbles
@@ -1037,7 +1201,14 @@ make working with data easier and more intuitive. It is part of our
 `tidyverse` package!!!!
 
 ```{r}
-
+# Create a tibble:
+num <- c(1,2,3)
+char <- c('John', 'Jane', 'Jimmy')
+fact <- factor(c('28', '35', '79'))
+logi <- c(TRUE, FALSE, TRUE)
+# Bring them all together:
+my_tbl <- tibble(num, char, fact, logi)
+my_tbl
 ```
 
 ```{r}
@@ -1077,7 +1248,11 @@ Some main differences between the two:
     "NaN", ".")
 
 ```{r}
+df <- data.frame(x=1:26, y= letters[1:26], z= c(TRUE, FALSE, TRUE, FALSE, TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
 
+df
+tb <- as_tibble(df)
+tb
 ```
 
 We can see that tibbles offer us much more information! They are also
@@ -1087,27 +1262,30 @@ What if we wanted to convert a Data Frame object into a Tibbles object?
 We have a method for that!
 
 ```{r}
-
+tb <- as_tibble(df)
+tb
 ```
 
 If we need to make a tibble display more columns than it thinks it
 should, we can override it with `print()`:
 
 ```{r}
-
+print(tb)
 ```
 
 The best way to see more of the data than a tibble default displays is
 to use View(). Nice!
 
 ```{r}
-
+view(tb)
 ```
 
 #### Subsetting
 
 ```{r}
+tb$x
 
+tb['x']
 ```
 
 At this point, it should be pointed out that the transformation
@@ -1122,7 +1300,7 @@ interacting with older code.
 ## Reading Data
 
 ```{r}
-
+read_csv("C:/Users/adoro/OneDrive/Desktop/CT Python/Week Seven/Classwork/femaleMiceWeights.csv")
 ```
 
 ## Tibble Functions
@@ -1132,25 +1310,25 @@ dplyr functions, which provide us a streamlined way to filter, select,
 group, summarize, and mutate data! \### `filter()`
 
 ```{r}
-
+filter(my_tbl, num>1)
 ```
 
 ### `select()`
 
 ```{r}
-
+select(my_tbl, num, char)
 ```
 
 ### `group_by()`, `summarize()`
 
 ```{r}
-
+group_by(my_tbl, fact) %>% summarize(avg_num = mean(num))
 ```
 
 ### `mutate()`
 
 ```{r}
-
+mutate(my_tbl, num_squared = num^2)
 ```
 
 ## N/A Values
@@ -1170,7 +1348,11 @@ tibbles is na_if(), which can be used to replace specified values with
 NA.
 
 ```{r}
+tb <- tibble(x= c(1,2,'missing', 4,5, 'missing'))
+tb
 
+tb <- tb%>% mutate(x=na_if(x, 'missing'))
+tb
 ```
 
 Now that we replaced all our "missing" values with a NA, let's explore
@@ -1180,7 +1362,8 @@ Tibbles uses the function `replace_na()`, which we can use to replace
 all the `NA` values with a specified value.
 
 ```{r}
-
+tb %>%
+  replace_na(list(x='0'))
 ```
 
 ## Importing/Exporting Data
@@ -1189,7 +1372,10 @@ Tibbles can be imported and exported using a variety of file formats!
 Some examples of this are CSV, Excel, and even SQL databases!
 
 ```{r}
+my_data <- read_csv("C:/Users/adoro/OneDrive/Desktop/CT Python/Week Seven/Classwork/femaleMiceWeights.csv") %>% as_tibble()
 
+# Export the data as a csv file:
+write_csv(my_data, 'my_data.csv')
 ```
 
 ### Homework
@@ -1202,10 +1388,11 @@ Some examples of this are CSV, Excel, and even SQL databases!
 
     # Write the solution
     even_or_odd <- function(n) {
-      if (n %% 2 == 0)
+      if (n %% 2 == 0){
         return ("Even")
-      else if (n %% 2 == 1)
+      } else if (n %% 2 == 1){
         return ("Odd")
+    }
     }
 
 
@@ -1233,9 +1420,9 @@ Some examples of this are CSV, Excel, and even SQL databases!
 
     # Solution:
     hero <- function(bullets, dragons) {
-      if (bullets >= 2 * dragons)
+      if (bullets >= 2 * dragons){
         return(TRUE)
-      else 
+      }else 
         return(FALSE)
     }
 
