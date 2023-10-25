@@ -1,0 +1,156 @@
+---
+title: "Stats in R Assignment"
+author: "Alex Lucchesi"
+date: "2023/10/25"
+output: html_document
+---
+
+## Assignment
+
+For today's assignment, you will be given a blank notebook and a link to the [Call of Duty Dataset](https://www.kaggle.com/datasets/beridzeg45/call-of-duty-reviews) You will need to fill out the notebook and create your own code chunks to run code. Remember that we use this code without any quotation marks to create a code chunk: '`{r} '` \### Your Goal:
+
+To receive credit for today's assignment, you will need to:
+
+-   Import the dataset
+-   Load the dataset into a tibble
+-   Mutate a new column
+-   Create a hypothesis regarding your data and communicate that hypothesis in a scientific method.
+-   Create a notebook that has markdown cells, explaining your code and process/thoughts. **Your markdown should be well thought out and reflect a thorough analysis.**
+-   Clean the data
+-   Explore the data (include visualizations)
+-   Create a statistical test and communicate the results
+
+# I. Loading & Cleaning Data
+
+```{r}
+# load necessary packages
+library(tidyverse, dplyr)
+```
+
+```{r}
+cod_reviews <- read.csv("C:/Users/adoro/OneDrive/Desktop/CT Python/Week Seven/Call of Duty Reviews.csv")
+cod_reviews
+```
+
+```{r}
+# Convert to a tibble
+tibble_cod <- as_tibble(cod_reviews)
+
+view(tibble_cod)
+```
+
+```{r}
+# Write a function to rename these columns
+rename_cols <- function(x) {
+  # Retrieve the column names usingnames(x)
+  names(x) <- names(x) %>% str_replace_all("\\.", "_") %>% tolower()
+  return (x)
+}
+```
+
+```{r}
+my_new_tibble <- rename_cols(tibble_cod)
+view(my_new_tibble)
+```
+
+```{r}
+# Check for missing values
+sum(is.na(my_new_tibble))
+```
+
+```{r}
+# Filter the tibble to remove rows with missing values
+
+my_new_tibble <- my_new_tibble %>%
+  drop_na()
+
+view(my_new_tibble)
+```
+
+```{r}
+# Filter my data to remove rows with empty strings in the platform column
+
+my_new_tibble <- my_new_tibble %>%
+  filter(platform != '')
+View(my_new_tibble)
+```
+
+```{r}
+# Mutate a column
+cod <- my_new_tibble %>%
+  mutate(my_new_tibble, avg_score = (critic_compound_score + user_compound_score)/2)
+
+View(cod)
+```
+
+## Hypotheses:
+
+-   Null Hypothesis (H0): There is no significant difference between critic scores and user scores.
+-   Alternative Hypothesis (H1): There is a significant difference between critic scores and user scores.
+
+# II. Visualizations
+
+```{r}
+# Histogram of user ratings
+#Find average user rating
+average_user_rating <- mean(cod$user_compound_score)
+
+ggplot(cod) +
+  geom_histogram(binwidth = 0.1, aes(x = user_compound_score), fill = 'blue', color = 'black') + 
+  geom_vline(xintercept = average_user_rating, color = 'white', linetype = 'dashed') + labs(title = "Distribution of User Ratings", x = 'User Rating', y = 'Frequency')
+```
+
+```{r}
+mean(cod$user_compound_score)
+```
+
+```{r}
+average_critic_rating <- mean(cod$critic_compound_score)
+
+ggplot(cod) +
+  geom_histogram(binwidth = 0.1, aes(x = critic_compound_score), fill = 'red', color = 'black') + 
+  geom_vline(xintercept = average_critic_rating, color = 'white', linetype = 'dashed') + labs(title = "Distribution of Critic Ratings", x = 'User Rating', y = 'Frequency')
+```
+
+```{r}
+ggplot(cod) +
+  geom_histogram(binwidth = 0.1, fill = "blue", color = "black", aes(x = user_compound_score), alpha = 0.7) +
+  geom_histogram(binwidth = 0.1, fill = "red", color = "black", aes(x = critic_compound_score), alpha = 0.7) +
+  labs(title = "Distribution of User and Critic Ratings", x = "Rating", y = "Frequency")
+```
+
+```{r}
+ggplot(cod) +
+  geom_boxplot(aes(x = release_year, y = user_compound_score), fill = "blue") +
+  labs(title = "Box Plot of User Scores Over Time", x = "Release Year", y = "User Score")
+```
+
+```{r}
+ggplot(cod) +
+  geom_point(aes(x = user_compound_score, y = critic_compound_score)) +
+  labs(title = "Comparison of User and Critic Scores", x = "User Score", y = "Critic Score")
+```
+
+```{r}
+
+```
+
+# III. Statistical Testing
+
+-   If the p-value is less than your chosen significance level (e.g., p \< 0.05), you can reject the null hypothesis.
+-   Rejecting the null hypothesis would mean that there is a significant difference in means between user scores and critic scores, even though the correlation is weak.
+-   Keep in mind that a weak correlation does not preclude the possibility of a significant difference in means.
+
+```{r}
+# Perform a t-test
+
+t.test(cod$user_compound_score, cod$critic_compound_score)
+```
+
+## Interpretation:
+
+The t-test suggests that there is some evidence against the null hypothesis(p-value = 0.05508). The alternative hypothesis suggests that the true difference in means is not equal to 0, indicating that there may be a significant difference between user_compound_score and critic_compound_score. However, the evidence is not extremely strong, as the p-value is slightly above the significance level of 0.05.
+
+The confidence interval indicates that the true difference in means could lie between approximately -0.1132 and 0.0012, which includes 0. This suggests some uncertainty about the exact difference in means.
+
+In summary, the t-test provides evidence of a potential difference in means, but the result is not highly significant, and there is some degree of uncertainty about the exact difference in means. Therefore, we fail to reject the null hypothesis.
