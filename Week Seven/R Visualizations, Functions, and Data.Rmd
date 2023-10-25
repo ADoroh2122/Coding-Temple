@@ -1,0 +1,1379 @@
+---
+title: "R for Data Exploration, Visualizations, Functions, Conditionals, Loops, Tibbles, and Tidy Data" 
+author: "Alex Lucchesi"    
+date: "October 24, 2023"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# **R Libraries: ggplot2, dplyr**
+
+## Installation
+
+The package `tidyverse` contains a group of packages that are useful for
+when we want to focus on Data Analytics.
+
+The R library `ggplot2` is a super useful tool we can use to create
+visualizations and explore our data.
+
+The R library `dplyr` is a super useful too we can use to explore and
+manipulate our data.
+
+```{r}
+# Install our package
+install.packages('tidyverse')
+
+# Load our package from the library:
+library(tidyverse)
+```
+
+More things we can do to get more information on R and what we're doing:
+
+```{r}
+help(tidyverse)
+?tidyverse
+```
+
+We'll need a few more packages for our exploration usage, too. We can
+install them all at once by using the `c()` function, which creates a
+list. We'll open these packages with the `library()` function later.
+
+```{r}
+install.packages(c('nycflights13', 'gapminder', 'Lahman'))
+library(nycflights13)
+
+nycflights13::flights
+```
+
+## Exploration
+
+### Using `dplyr` for Data Exploration
+
+`dplyr` is a powerful package for data manipulation and exploration. It
+provides a set of functions that can be used to filter, group, and
+summarize data. In this section, we will explore some of the most
+commonly used functions in `dplyr`.
+
+A few things about data and data types in R! Like Python, we have
+specified types of data we'll use in our tables.
+
+-   int is integer
+
+-   dbl is doubles
+
+-   chr is for character or characters
+
+-   dttm is date-time
+
+-   lgl is logical - similar to Booleans in Python or other programming
+    languages; either TRUE or FALSE
+
+-   fctr is factors (We won't use these much yet)
+
+-   date - self explanatory.
+
+### There are five main processes we'll use with dplyr to manipulate our data:
+
+-   `filter()` our data by choosing data by value
+
+-   `arrange()` data by reordering rows
+
+-   `select()` specific data items
+
+-   `mutate()` existing data into new data
+
+-   `summarize()` values into a single summary
+
+Like SQL, we'll use aggregation to break these functions down into
+groups; we'll do so by using a `group_by()` function as well.
+
+dplyr functions follow a common syntax: \`function_name(\<data frame\>,
+\<\*args\>)\<resulting data frame\>. Many data frames in R are called
+'tibbles'. Don't worry too much about what this means for now - just
+imagine them like tables in SQL for right now. An example of the dplyr
+syntax:
+
+```{r}
+# Filter information in the DataFrame, where the month ==3, day == 31
+
+# filter(df, conditional1, conditional2)
+view(filter(flights, month==3, day==31))
+```
+
+In the above example, I had two arguments - month == 3, and day == 31.
+This filtered down the results to only display flights that occurred on
+March 31, which is the day I wrote this (except the `nycflights13` data
+is from 2013 - RStudio was only two years old!)
+
+Remember, too, that just like ggplot2 - we can still ask questions in
+our console, like `?flights` to get more information.
+
+Much like python, we can compare values using comparison operators -
+`>`, `<`, `>=`, `<=`, `==`, `!=`. We also get to use & and \| for
+comparisons of multiple booleans.
+
+```{r}
+carrier_df <- filter(flights, carrier=='AA'|carrier=='DL'|carrier=='UA')
+carrier_df
+```
+
+```{r}
+delayed_times_df <- filter(flights, dep_time <=1000 & sched_arr_time >= 1000 & arr_delay !=0)
+view(delayed_times_df)
+```
+
+### Arranging Rows
+
+```{r}
+view(arrange(flights, year, month, day, desc(sched_dep_time)))
+```
+
+## Selecting Columns
+
+```{r}
+#Method 1:
+flights$dep_time
+
+# Method 2:
+flights['dep_time']
+```
+
+```{r}
+select(flights, year, month, day)
+```
+
+We can also use `-` to exclude columns from the selection:
+
+```{r}
+select(flights, -c(carrier, dep_time))
+```
+
+`dplyr` has built in helper functions that can return data to us as well
+when used in conjunction with our select statement!
+
+Some examples of these are:
+
+-   starts_with()
+
+-   ends_with()
+
+-   contains()
+
+-   matches() - inside of this, you'll insert a string of Regex
+
+-   num_range("n", 5:7) will match n5, n6, and n7
+
+-   everything() will include all the rest of the columns. So you can
+    put it at the end of a select statement as a parameter, and you'll
+    be able to move selected columns to the left side, and then include
+    the rest of the data.
+
+```{r}
+# Select all columns from the flight dataset:
+select(flights, everything())
+
+# Select all columns from the flight dataset that start with the letter c:
+select(flights, starts_with('c'))
+
+# Select all the columns that end with the letter e:
+select(flights, ends_with('e'))
+
+# Select all columns that contain the letter g:
+select(flights, contains('g'))
+
+# Select all columns that match the regex expression fl|c
+select(flights, matches('fl|c'))
+```
+
+Select can also be used to get columns by index. To do so, we use the
+`:` operator we learned about yesterday to specify a range of column
+indicies:
+
+```{r}
+select(flights, c(1,3,5,7))
+```
+
+### Mutating Data
+
+Besides being a terrifying name, mutating data is an important part of
+exploring out data. This function allows us to combine observations from
+other columns to create a new column of observations. For example:
+
+```{r}
+flight_data <- select(
+  flights,
+  year:day,
+  ends_with('delay'),
+  distance,
+  air_time
+)
+view(flight_data)
+
+# Apply a mutation to the dataset:
+flight_data_mut <- mutate(flight_data,
+                          gain = arr_delay - dep_delay,
+                          speed = distance / air_time * 60)
+
+view(flight_data_mut)
+```
+
+You can now see the `gain` and `speed` columns have been created;
+`mutate()` always places those new columns at the end of the data set,
+so if you'd want to move them to the front, you'd use `select()`.
+
+Keep in mind as you do mutations that whatever process you end up using
+has to be something that iterates on data sets, and that produces
+something iterable as well.
+
+### Transmute Data
+
+Transmutation is when we want to create these new variables in our
+dataframe, but only want to return those variables back to us!
+
+```{r}
+flight_data <- select(
+  flights,
+  year:day,
+  ends_with('delay'),
+  distance,
+  air_time
+)
+view(flight_data)
+
+# Apply a mutation to the dataset:
+flight_data_tmut <- transmute(flight_data,
+                          gain = arr_delay - dep_delay,
+                          speed = distance / air_time * 60)
+
+view(flight_data_tmut)
+
+```
+
+### Summarizing Data
+
+```{r}
+summarize(flights, delay = mean(dep_delay, na.rm=TRUE))
+```
+
+First off, this is kind of a weird table. It only has one piece of data
+in it! Not especially useful. By the way, the `na.rm = True` line asks
+the function to remove any missing values in the data. If we didn't have
+it when we use `group_by()`, we'd have a lot of observations reading
+`NA`, which isn't very helpful. In our current data set, the delay times
+for cancelled flights are populating the database with `NA` values.
+
+Summarizing data is a lot easier if we use `group_by()` with it. This is
+very similar to how we use aggregate functions in SQL.
+
+```{r}
+by_day <- group_by(flights, year, month, day)
+
+view(summarize(by_day, delay = mean(dep_delay, na.rm=TRUE)))
+```
+
+## In-Class Exercise 1:
+
+Using the built in dataset, `mtcars`;
+
+-   Select all columns that start with `'m'`
+
+-   Select all columns that end with `'g'`
+
+-   Select all columns that matches mp or c
+
+-   Mutate a new column using the `disp` and `cyl` columns.
+
+-   Summarize your data!
+
+```{r}
+?mtcars
+
+cars <- mtcars
+
+select(cars, starts_with('m'))
+
+select(cars, ends_with('g'))
+
+select(cars, matches('mp|c'))
+
+cars_mut <- mutate(cars, disp_by_cylinder = disp * cyl)
+cars_mut
+
+my_car <- group_by(cars, mpg, cyl, gear)
+
+view(summarize(my_car))
+
+```
+
+### Using Pipe to string together functions
+
+These functions become more and more useful when we can combine them
+together - often our exploration will be multi-step. Fortunately,
+there's a way we can combine functions together - pipe.
+
+Imagine we want to look at the relationship between distance and average
+delay for each location. We'll group flights by destination, figure out
+distance, average delay, and number of flights, and then filter out
+noise and the airport in Honolulu, which is so far away from other
+airports that it will make it hard to see the data we want to focus on.
+
+```{r}
+by_destination <- group_by(flights, dest)
+by_destination
+
+delay <- summarize(
+  by_destination,
+  count= n(), # n() gives us the current group size
+  dist = mean(distance, na.rum=TRUE),
+  delay = mean(arr_delay, na.rm=TRUE)
+)
+delay
+
+delay <- filter(delay, count > 20, dest != 'HNL')
+delay
+```
+
+A more efficient way of doing the same thing, where we don't need to
+write variables for each step over and over, uses pipe:
+
+```{r}
+delays <- flights %>%
+  group_by(dest) %>%
+  summarize(
+    count=n(),
+    dist = mean(distance, na.rm=TRUE),
+    delay = mean(arr_delay, na.rm=TRUE),
+    carrier
+  ) %>%
+  filter(count > 20, dest != 'HNL')
+
+delays
+```
+
+This way, we can simply thread queries together without having to write
+new variables every time. It's inferred that each function is working on
+the same data frame, so we don't need to write it in as the first
+parameter of each function here. It's pretty normal to add a count
+function into our code as well, so that we know how large our data sets
+are - if we've queried our data down into a very small number of values,
+it can be easy to mistakenly draw conclusions based on a very small
+amount of data.
+
+Please note: The only part of the tidyverse that won't work with pipe is
+ggplot2. You can pipe into it, but you can't pipe afterwards.
+
+```{r}
+not_cancelled <- flights %>%
+  filter(!is.na(dep_delay), !is.na(arr_delay)) %>%
+  group_by(year, month, day) %>%
+  summarize(mean = mean(dep_delay),
+            tailnum,
+            arr_delay)
+
+not_cancelled
+```
+
+## In-Class Exercise 2:
+
+Using the `flights` dataset, create your own column, then create a
+filter that removes values for carrier where it is equal to 'UA'. Then
+group the dataset by the sched_arr_time, summarize the data and View
+your data.
+
+```{r}
+
+f <- flights %>%
+  filter(carrier != 'UA') %>%
+  group_by(sched_arr_time) %>%
+  summarize(mean = mean(arr_delay, na.rm=TRUE),
+            count = n())
+
+f
+
+```
+
+## Visualizations with ggplot2
+
+Now we can look at the plotted data of delay times, and try to learn
+something about delay times.
+
+```{r}
+delay <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(
+    delay = mean(arr_delay)
+  )
+
+ggplot(data=delays, mapping = aes(x=delay)) +
+geom_freqpoly(binwidth=10)
+```
+
+This chart makes it look like there are planes with an average delay of
+5 hours, which is bizarre. Maybe we're not looking at a large enough
+data set! For example - maybe we're working with a small data set, like
+if we were only looking at a small number of total flights. Imagine if
+this data set were only 100 flights, and one plane had a 10 hour delay,
+and no delay on it's second flight. That plane would now appear to have
+5 hours of delay on average! Obviously, this is a problem, and we need
+to be sure that we don't have too small of a data set.
+
+```{r}
+delay <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(
+    delay = mean(arr_delay),
+    n = n()
+  )
+
+ggplot(data=delay, mapping = aes(x = n, y = delay)) +
+  geom_point(alpha = 1/10)
+```
+
+Now we have a better idea. Let's change the plot parameters so we can
+get a better look at the bulk of our data - we have some outliers for
+flights that are greatly delayed here, and we can see that the flights
+with heavy delays have very few flights to their name. It's possible
+these planes had other issues causing their delays, and they didn't do
+any other flights.
+
+```{r}
+delay %>%
+  filter(n>25) %>%
+  ggplot(mapping = aes(x = n, y = delay)) + 
+  geom_point(alpha = 1/10)
+```
+
+Looks like the majority of flights leave on time most of the time. This
+is a much better data set to look at to find information about the bulk
+of flight delays.
+
+Built in to our tidyverse are several data sets that we can play around
+with. In the below code block, we create a variable `myplot` and save
+the `mpg` database to it.
+
+```{r}
+myplot <- mpg
+#?mpg
+view(myplot)
+view(diamonds)
+```
+
+**Something you should be aware of and have open (perhaps on a second
+monitor, or you can print them out) is the ggplot2 cheat sheet!**
+<https://github.com/rstudio/cheatsheets/blob/main/data-visualization-2.1.pdf>
+
+### QPlot
+
+`Qplot`, or quick-plot, uses inference to build a plot in the quickest,
+easiest fashion with little to no code. For example, we can look at the
+diamonds dataset and quickly plot the carat and price columns from it
+
+```{r}
+qplot(carat, price, data = diamonds)
+```
+
+We can see that there is some form of linear relationship here, but with
+the way the values currently fall on the graph, we may want to normalize
+these values first. Here's how we can do that using the `log()`
+function:
+
+```{r}
+qplot(log(carat), log(price), data=diamonds)
+```
+
+Now, we can clearly see the linear relationship between carat and price!
+
+In another example, we can look at the mtcars dataset and quickly plot
+the carb and cyl columns from it
+
+```{r}
+qplot(carb, cyl, data=mtcars)
+```
+
+#### Arguments
+
+Arguments in ggplot2 can be a combination of already existing variables
+as well!
+
+```{r}
+qplot(carat, x*y*z, data=diamonds)
+```
+
+Some of the basic arguments of `qplot()` are:
+
+-   **Colour:** Using `colour`, we can point towards a column of the
+    dataframe object to use as a color.
+
+-   **Size:** Using `size`, we can adjust the size of each data point
+    available.
+
+-   **Shape:** `Shape` transforms the appearance of the dots on the
+    scatterplot.
+
+-   **Alpha:** `Alpha` refers to the opacity of your dots on the
+    scatterplot.
+
+```{r}
+qplot(carat,
+      price,
+      data=diamonds,
+      colour = color,
+      size = 1,
+      alpha = 1/100)
+```
+
+One thing to note is that the color and shape work well with discrete
+data, while size works well with continuous!
+
+```{r}
+qplot(price, data=diamonds, bindwidth=500) +
+  labs(x='Price', y='Frequency', title = 'Distribution of Diamond Prices') +
+  theme(plot.title=element_text(hjust=.5))
+```
+
+## In-Class Exercise 3:
+
+Using `qplot()`, create a graphic from the diamonds dataset. Write out
+an explanation on how that graphic represents some relationship between
+independent and dependent variables.
+
+```{r}
+
+```
+
+## Visualizations Cont.
+
+### `ggplot()`
+
+```{r}
+# ggplot(data, mapping=aes(col1, col2, color, etc.))
+# + whatever graphic we want to add on
+# geom_point(mapping=aes(columns we want to visualize))
+```
+
+```{r}
+ggplot(data=myplot) +
+  geom_point(mapping = aes(displ, hwy))
+```
+
+```{r}
+ggplot(data=myplot, mapping = aes(displ, hwy, color = class)) + 
+  geom_point()
+```
+
+```{r}
+ggplot(data=myplot, mapping = aes(displ, hwy, color = displ)) + 
+  geom_point()
+```
+
+```{r}
+ggplot(data=myplot, mapping = aes(displ, hwy, color = displ < 5)) + 
+  geom_point()
+```
+
+#### Facets
+
+##### What is faceting?
+
+Faceting is a data visualization technique used to display subsets of a
+dataset in separate panels or plots. Each panel corresponds to a unique
+value or combination of values of a variable, allowing you to examine
+patterns and trends across different subgroups of your data.
+
+In ggplot2, faceting is achieved using the `facet_wrap()` or
+`facet_grid()` functions. `facet_wrap()` arranges panels in a grid based
+on a single variable, while `facet_grid()` arranges panels based on two
+variables.
+
+To use faceting, you first need to identify the variable or variables
+that you want to use to split your data into subsets. Then, you add the
+appropriate facet function to your `ggplot` code and specify the
+variable(s) to use for faceting.
+
+```{r}
+ggplot(data = myplot) +
+  geom_point(mapping = aes(displ, hwy, shap=drv, color = rgb(.7, 1,.3))) +
+  facet_wrap(~class, nrow=2)
+```
+
+```{r}
+ggplot(data = myplot) +
+  geom_point(mapping = aes(displ, hwy, shape=drv, color = rgb(.7, 1,.3))) +
+  facet_wrap(~class, nrow=2) + 
+  scale_shape_manual(values = c(1,2,3)) + 
+  labs(x='Engine Displacement (L)', y = 'Highway Miles Per Gallon (MPG)') + 
+  theme(axis.text.x = element_text(size=10, color='blue'), 
+        axis.text.y = element_text(size=10, color='red'),
+        legend.position='bottom') 
+```
+
+```{r}
+ggplot(data = myplot) +
+  geom_point(mapping = aes(displ, hwy, color = class))+
+  facet_grid(drv ~.)
+```
+
+The \~ symbol in drv \~ . is used to specify the formula for the grid of
+plots. In this case, it specifies that we want to split the data into
+different subsets based on the levels of the drv variable, and create a
+grid of plots using all other variables in the data.
+
+Possible variations: facet_grid(. \~ drv) would create a grid of plots
+where each plot shows the relationship between drv and all other
+variables in the data, split by the levels of each variable.
+facet_grid(drv \~ cyl) would create a grid of plots where each plot
+shows the relationship between mpg, hp, and all other variables in the
+data, split by the levels of drv and cyl. facet_wrap(drv \~ .) is a
+similar function that creates a grid of plots, but instead of arranging
+them in a grid, it wraps them into a single row or column.
+
+```{r}
+ggplot(data=myplot) +
+  geom_point(mapping = aes(displ, hwy), position = 'jitter')
+```
+
+```{r}
+ggplot(data=myplot) + 
+  geom_smooth(mapping = aes(displ, hwy, linetype= drv)) +
+  geom_point(mapping = aes(displ, hwy, color = drv))
+```
+
+```{r}
+ggplot(data=myplot) + 
+  geom_smooth(mapping = aes(displ, hwy, linetype= drv), se=FALSE) +
+  geom_point(mapping = aes(displ, hwy, color = drv))
+```
+
+```{r}
+ggplot(diamonds) +
+  geom_bar(aes(cut))
+```
+
+```{r}
+
+```
+
+Whoa, where'd count come from? **Count is not a variable or attribute of
+the variable diamonds!** Count comes automatically with a lot of graphs
+as an attribute. You can verify what I'm saying with `?diamonds` in the
+console.
+
+Any attribute of a data set that is algorithmically calculated is called
+a *stat*, which is short for a statistical transformation. Many of the
+**geom** functions have stats built in, and many stats display geoms.
+For example, the above code block used a geom, but this one uses a stat,
+and results in an identical chart:
+
+```{r}
+ggplot(diamonds) +
+  stat_count(aes(cut))
+```
+
+Let's add color here!
+
+```{r}
+ggplot(diamonds) + 
+  geom_bar(aes(cut, color = cut))
+```
+
+```{r}
+ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = cut))
+```
+
+```{r}
+ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = clarity), position = 'fill')
+```
+
+```{r}
+ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = cut), position = 'identity', alpha = 1/2)
+```
+
+```{r}
+ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = clarity), position = 'dodge')
+```
+
+```{r}
+
+```
+
+#### Pie Chart
+
+What if I wanted to add an additional variable to my graph as well as
+change the graphic into a pie chart?
+
+```{r}
+pie = ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = clarity),
+           position = 'fill') +
+  theme(aspect.ratio=1) + 
+  labs(x=NULL, y=NULL)
+
+pie + coord_polar()
+```
+
+```{r}
+pie = ggplot(diamonds) + 
+  geom_bar(aes(cut, fill = clarity),
+           position = 'dodge') +
+  theme(aspect.ratio=1) + 
+  labs(x=NULL, y=NULL)
+
+pie + coord_polar()
+```
+
+#### In-Class Discussion
+
+Is this a good graphic? Why? What information is being returned to us
+and how is it useful?
+
+```{r}
+
+```
+
+#### Box-Plots
+
+to generate a box-plot, we can use the `geom_boxplot()` function in
+conjunction with our `ggplot()` library
+
+```{r}
+
+```
+
+#### Customizing a box-plot
+
+```{r}
+
+```
+
+## In-Class Exercise 4:
+
+Using ggplot2, create a custom graphic using the `Lahman` built-in
+dataset we loaded earlier this lecture. Your graphic should be proceeded
+with data exploration as well as a hypothesis about the data before
+creating the graphic. Your graphic should include colors, a title for
+all axes and for the graphic itself.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## Vizulations Cont.
+
+#### Map Data
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+#### Customize a map
+
+```{r}
+
+```
+
+## Functions and Conditionals
+
+### Functions
+
+#### When should we use functions?
+
+When I have to type a line of code multiple times to accomplish the same
+thing.
+
+### Why should I use a Function?
+
+Reproducibility/Automation
+
+Once I build a function, I can use across my programs.
+
+```{r}
+# def function(parameters):
+# Do stuff
+# Return stuff
+
+# Syntax in R:
+our_function <- function(optional_params){
+  #Do stuff
+  # Return stuff
+}
+# To invoke:
+our_function(#whatever params go here)
+```
+
+An example:
+
+```{r}
+# Create a function that could convert celcius to far
+# C * (9/5) + 32
+
+c_to_f <- function(val){
+  temp_fahr <- val * (9/5) + 32
+  return(temp_fahr)
+}
+
+```
+
+This is all cool.. but it didn't do anything. We need to call the
+function!
+
+```{r}
+test_temps <- c(16.55, 26.99, 32.59, 8.58, 28.03, 28.54, 21.97)
+
+c_to_f(test_temps)
+```
+
+Notice that in the background here, we are looping over each item in the
+array, but we never write a for loop! Keep this in mind, since when you
+pass in a large data set, the changes made by functions aren't quite
+immediate - the computer does have to go over each item in your data
+set, and change them one at a time.
+
+A shortcut of sorts is to use the `apply()` function, which operates
+very similarly to Python's `map()`. Note that `apply` syntax goes as
+follows: `apply(X, MARGIN, FUN)` where X is the data set to use, MARGIN
+is specification for rows or columns, and FUN is the function to apply.
+
+```{r}
+
+```
+
+It is common to use `mean`, `median`, `sum`, `min`, or `max` with
+`apply`, but we can also use our user-defined functions as well. Note
+that apply() only works with matrices.
+
+```{r}
+
+```
+
+#### More Functions!
+
+Now, let's create a function to check if a number is even or odd!
+
+```{r}
+
+```
+
+Next, let's calculate a factorial:
+
+```{r}
+calc_factorial <- function(x){
+  if (x < 0){
+    print('Factorial is not defined for negative numbers')
+  } else if (x == 0) {
+    print('Factorial of 0 is 1')
+    } else {
+    result <- 1
+    for (i in 1:x){
+      result <- result * i
+    }
+    print(paste('Facorial of', x, 'is', result))
+  }
+}
+calc_factorial(5)
+```
+
+What if we wanted to use a function on a vector?:
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## In Class Exercise 5:
+
+Create a function that checks if a number is positive or negative. Your
+function should account for zero.
+
+Test it using a positive and negative number as well as 0.
+
+```{r}
+
+```
+
+## Conditionals
+
+The basic syntax for an if statement goes like this:
+
+```{r}
+
+```
+
+The logical statements should boil down to a boolean; for example:
+
+```{r}
+
+```
+
+We can also add else if statements in the middle if we need more
+options.
+
+```{r}
+
+```
+
+We can also nest conditionals just like we do in Python.
+
+```{r}
+
+```
+
+Nested ifelse statement: This is a powerful way to evaluate multiple
+conditions within a single ifelse statement. The syntax for nested
+ifelse statements is ifelse(condition1, value1, ifelse(condition2,
+value2, ifelse(condition3, value3, value4))). Here is an example:
+
+```{r}
+
+```
+
+Switch statement: The switch statement is similar to a series of ifelse
+statements but can be more efficient and easier to read. The syntax is
+switch(expression, value1, value2, ..., valueN).
+
+```{r}
+
+```
+
+Case_when statement: The case_when statement is a versatile way to
+evaluate multiple conditions and assign values. The syntax is
+case_when(condition1 \~ value1, condition2 \~ value2, ..., TRUE \~
+valueN).
+
+One thing to note here, is that case_when is associated with your
+`dplyr` library. In order to use this, we should have either that or the
+`tidyverse` library pre-loaded.
+
+```{r}
+
+```
+
+Short-circuit evaluation: Short-circuit evaluation is a way to evaluate
+conditional statements more efficiently by only checking the second
+condition if the first condition is true. The syntax is condition1 &&
+condition2.
+
+```{r}
+
+```
+
+## In Class Exercise 6:
+
+Create two vectors of numbers. Using a conditional statement, change the
+value for the vectors into a character type:
+
+```{r}
+
+```
+
+Now, let's look at another core part of R programming - Loops!
+
+### Loops
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+We can also do nifty stuff with our vectors, such as apply changes to
+specific indices of our data.
+
+```{r}
+
+```
+
+We can loop over more than just lists:
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+Like Python, we have while loops in R:
+
+```{r}
+
+```
+
+## In Class Exercise 7:
+
+Write a while loop that calculates the sum of the numbers 1-10:
+
+```{r}
+
+```
+
+## Tibbles
+
+### What is a Tibble?
+
+A tibble is a dataframe that has a "modern" take. They are designed to
+make working with data easier and more intuitive. It is part of our
+`tidyverse` package!!!!
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+#### Data Frames VS Tibbles
+
+Some main differences between the two:
+
+-   Tibbles print only the first few rows and all columns that fit on
+    the screen, making it easier to view large data sets without
+    overwhelming the console.
+
+-   Tibbles also show their data type for each column (for example:
+    `<chr>` for character, `<dbl>` for doubles)
+
+-   Tibbles have a stricter subsetting mechanism than data frames. When
+    you extract a single column from a tibble, it returns a tibble
+    instead of a vector. When you extract a single row, it returns a
+    tibble with one row instead of a data frame with one row. This
+    behavior helps avoid common programming errors.
+
+-   Tibbles preserve the case of variable names, while data frames do
+    not. Tibbles also allow column names to be specified with backticks,
+    which is useful when using reserved words or names with spaces or
+    special characters.
+
+-   Tibbles are more consistent than data frames in their treatment of
+    data types. They do not coerce character vectors to factors, and
+    they do not silently drop dimensions when subsetting.
+
+-   Tibbles treat missing values more consistently than data frames.
+    Missing values are always displayed as "NA", regardless of the data
+    type. This avoids the confusion that can arise when missing values
+    are represented differently for different data types (e.g., "NA",
+    "NaN", ".")
+
+```{r}
+
+```
+
+We can see that tibbles offer us much more information! They are also
+easier to manipulate, work well with tidyr and dplyr.
+
+What if we wanted to convert a Data Frame object into a Tibbles object?
+We have a method for that!
+
+```{r}
+
+```
+
+If we need to make a tibble display more columns than it thinks it
+should, we can override it with `print()`:
+
+```{r}
+
+```
+
+The best way to see more of the data than a tibble default displays is
+to use View(). Nice!
+
+```{r}
+
+```
+
+#### Subsetting
+
+```{r}
+
+```
+
+At this point, it should be pointed out that the transformation
+functions from `dplyr` are extremely valuable in context of subsets. In
+most programming, there are multiple ways of finding the same answer;
+this applies here as well.
+
+You can also turn a tibble back into a data frame with
+`as.data.frame()`. This only really comes into play if you're
+interacting with older code.
+
+## Reading Data
+
+```{r}
+
+```
+
+## Tibble Functions
+
+Tibble and dplyr work wonders together! We can manipulate Tibbles using
+dplyr functions, which provide us a streamlined way to filter, select,
+group, summarize, and mutate data! \### `filter()`
+
+```{r}
+
+```
+
+### `select()`
+
+```{r}
+
+```
+
+### `group_by()`, `summarize()`
+
+```{r}
+
+```
+
+### `mutate()`
+
+```{r}
+
+```
+
+## N/A Values
+
+Tibbles handle missing data in a similar way to data frames. By default,
+missing values are represented by NA (not available) in tibbles.
+However, there are several functions available in R to handle missing
+values in tibbles.
+
+It's worth noting that tibbles also have a special column type for
+missing values called missing. This can be useful in cases where NA is a
+valid value in a column, but we want to be able to distinguish between
+missing values and non-missing values.
+
+One of the most common functions used to handle missing values in
+tibbles is na_if(), which can be used to replace specified values with
+NA.
+
+```{r}
+
+```
+
+Now that we replaced all our "missing" values with a NA, let's explore
+how tibbles handles replacing these values!
+
+Tibbles uses the function `replace_na()`, which we can use to replace
+all the `NA` values with a specified value.
+
+```{r}
+
+```
+
+## Importing/Exporting Data
+
+Tibbles can be imported and exported using a variety of file formats!
+Some examples of this are CSV, Excel, and even SQL databases!
+
+```{r}
+
+```
+
+### Homework
+
+1.  Do 5 CodeWars problems in R. Share your solutions here:
+
+    ```{r}
+    # Problem 1 I solved in Codewars:
+    # Create a function that takes an integer as an argument and returns "Even" for even numbers or "Odd" for odd numbers.
+
+    # Write the solution
+    even_or_odd <- function(n) {
+      if (n %% 2 == 0)
+        return ("Even")
+      else if (n %% 2 == 1)
+        return ("Odd")
+    }
+
+
+    # Problem 2:
+    #In this simple assignment you are given a number and have to make it negative. But maybe the number is already negative?
+
+    #Examples
+    #make_negative(1);  # return -1
+    #make_negative(-5); # return -5
+    #make_negative(0);  # return 0
+    #Notes
+    #The number can be negative already, in which case no change is required.
+    #Zero (0) is not checked for any specific sign. Negative zeros make no mathematical sense.
+
+    #Solution
+    make_negative <- function(num){
+      -abs(num)
+    }
+
+
+    # Problem 3:
+    #A hero is on his way to the castle to complete his mission. However, he's been told that the castle is surrounded with a couple of powerful dragons! each dragon takes 2 bullets to be defeated, our hero has no idea how many bullets he should carry.. Assuming he's gonna grab a specific given number of bullets and move forward to fight another specific given number of dragons, will he survive?
+
+    #Return true if yes, false otherwise :)
+
+    # Solution:
+    hero <- function(bullets, dragons) {
+      if (bullets >= 2 * dragons)
+        return(TRUE)
+      else 
+        return(FALSE)
+    }
+
+    # Problem 4:
+    #Make a function that will return a greeting statement that uses an input; your program should return, "Hello, <name> how are you doing today?".
+
+    #Solution:
+    greet <- function(name) {
+      greet <- paste('Hello,', name, 'how are you doing today?')
+      return(greet)
+    }
+
+    # Problem 5:
+    #Given an array of integers your solution should find the smallest integer.
+
+    #For example:
+
+    #Given [34, 15, 88, 2] your solution will return 2
+    #Given [34, -345, -1, 100] your solution will return -345
+    #You can assume, for the purpose of this kata, that the supplied array will not be empty.
+
+    # Solution
+    findSmallestInt <- function(arr){
+      min(arr)
+    }
+
+    ```
+
+2.  Create a function that checks an input of type `int` and returns
+    fizz if the number is a multiple of 3, buzz if the number is a
+    multiple of 5, and fizzbuzz if the number is a multiple of 3 and 5.
+
+    ```{r}
+    fizz_to_buzz <- function(x) {
+      if (x %% 5 == 0 & x %% 3 == 0)
+        return ('fizzbuzz')
+      else if (x %% 3 == 0) 
+        return ('fizz')
+      else if (x %% 5 ==0)
+        return ('buzz')
+      
+    }
+        
+     fizz_to_buzz(5)   
+      
+    ```
+
+3.  **Mario Challenge:** In the classic Super Mario games, Mario ends
+    each level by ascending a flight of stairs and leaping off the top
+    to arrive at the castle at the end. (See
+    [here](https://youtu.be/-avspZlbOWU?t=55) for details). We can
+    imagine that each of the bricks of the stairs is a character X.
+    Create a function that prints out a set of stairs. For example:
+
+    If the function is called marioStairs() and we pass in the value 4,
+    we would expect to see stairs with a length of 4 and a height of 4:
+
+    X
+
+    XX
+
+    XXX
+
+    XXXX
+
+    ```{r}
+    marioStairs <- function(num) {
+      for(i in 1:(num)) {
+        print(strrep('X', i))
+      } 
+    }
+
+    marioStairs(5)
+    ```
+
+4.  Find a built-in dataset you would like to explore. Explore the
+    dataset and use the cheat sheet you built in Week 1 to label
+    continuous and discrete data. Analyze the dataset using dplyr,
+    create graphs, mutate two columns, and formulate a hypothesis about
+    your data.
+
+#### **Data Types:**
+
+-   Column 1: Data Type
+
+-   Column 2: Data Type
+
+```{r}
+data(Seatbelts)
+Seatbelts <- data.frame(Seatbelts)
+?Seatbelts
+# Before looking at the dataset, my hypothesis is that the percentage of average deaths/serious injuries by rear-seat passengers to total deaths/serious injuries decreased after the Complusory wearing of seat belts was introduced on Jan 31, 1983. 
+```
+
+```{r}
+# Mutating the Data
+
+Seatbelts_mut <- mutate(Seatbelts,
+                  total_killed_or_injured = DriversKilled + drivers + front + rear,                   deaths_or_injured_per_kms = total_killed_or_injured / kms)
+
+view(Seatbelts_mut)
+
+```
+
+```{r}
+Seatbelts_0 <- filter(Seatbelts_mut, law==0)
+view(Seatbelts_0)
+summary(Seatbelts_0)
+```
+
+```{r}
+# In review of the data above, the percentage of average deaths/serious injuries by rear-seat passengers to total deaths/serious injuries when the law was not in effect was 12.84% per month. 
+```
+
+```{r}
+# Continous
+qplot(rear, total_killed_or_injured, data = Seatbelts_0)
+```
+
+```{r}
+Seatbelts_1 <- filter(Seatbelts_mut, law==1)
+view(Seatbelts_1)
+summary(Seatbelts_1)
+```
+
+```{r}
+# Continous
+qplot(rear, total_killed_or_injured, data = Seatbelts_1)
+```
+
+```{r}
+# In review of the data above, the percentage of average deaths/serious injuries by rear-seat passengers to total deaths/serious injuries after the law was put into effect was 16.98% per month. 
+```
+
+```{r}
+# Therefore, based on my research with the data onhand, rear seated passengers had an increase of 4.14% of death/serious injury after the complusory wearing of seat belts was introduced on Jan 31, 1983.
+```
+
+```{r}
+# disclaimer - I believe that this dataset is skewed as there were 169 months of data prior to the law being introduced and only 23 months after. I would need additional information to perform an accurate testing on this issue.
+```
