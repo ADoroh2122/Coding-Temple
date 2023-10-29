@@ -1,0 +1,321 @@
+---
+title: "Sleep Efficiency"
+author: "Andrew Doroh"
+date: "October 29, 2023"
+---
+
+# How Well Did You Sleep?
+
+The premise of this report is to analyze a group of test subjects and their sleep patterns while interpreting their sleep efficiency with differing factors:
+
+-   Sleep Efficiency - a measure of the proportion of time in bed spent asleep
+
+-   REM Sleep Percentage - the percentage of total sleep time spent in REM sleep
+
+-   Caffeine consumption in the 24 hours prior to bedtime
+
+-   Alcohol consumption in the 24 hours prior to bedtime
+
+-   Smoking status
+
+-   Exercise frequency
+
+# Step 1: Imports
+
+```{r}
+library(tidyverse)
+library(dplyr)
+
+```
+
+```{r}
+sleep <- read_csv("C:/Users/adoro/OneDrive/Desktop/CT Python/Capstone/Sleep_Efficiency.csv")
+sleep
+```
+
+# Step 2: Hypothesis
+
+### Ho: Sleep Efficiency and Alcohol Consumption have No statistical significance to one another.
+
+### Ha: Sleep Efficiency and Alcohol Consumption have statistical significance to one another.
+
+# Step 3: Clean/Tidy Data
+
+### What are the needs of this data set to be considered clean and tidy?
+
+-   Column Headers (R style Guidelines)
+
+-   Column Data Types
+
+-   Change Smoking Status to a Boolean
+
+-   Null/NA Values
+
+```{r}
+names(sleep) <- names(sleep) %>% str_to_lower() %>% str_replace_all(' ', '_')
+names(sleep)
+```
+
+```{r}
+sleep
+```
+
+```{r}
+str(sleep)
+```
+
+```{r}
+sleep['smoking_status'] <- sleep['smoking_status'] == "Yes"
+```
+
+```{r}
+view(sleep)
+```
+
+### In the final step of cleaning the data, we are focusing on null/na values
+
+-   Where are the null/na values?
+
+-   Are we going to fill them with 0? Are we going to fill them with the mean? Are we going to drop them?
+
+-   Use visualizations to help determine
+
+```{r}
+colSums(is.na(sleep))
+```
+
+```{r}
+ggplot(sleep) +
+  geom_histogram(binwidth = 1, aes(x = awakenings), fill = 'red', color = 'black') +
+  labs(title = 'Distribution of Awakenings', x = 'Awakenings', y = 'Frequency')
+```
+
+```{r}
+ggplot(sleep) +
+  geom_histogram(binwidth = 20, aes(x = caffeine_consumption), fill = 'blue', color = 'black') +
+  labs(title = 'Distribution of Caffeine Consumption', x = 'Caffeine Consumption', y = 'Frequency')
+```
+
+```{r}
+sleep1 <- filter(sleep, caffeine_consumption < 100)
+```
+
+```{r}
+ggplot(sleep1) +
+  geom_histogram(binwidth = 10, aes(x = caffeine_consumption), fill = 'blue', color = 'black') +
+  labs(title = 'Distribution of Caffeine Consumption', x = 'Caffeine Consumption', y = 'Frequency')
+```
+
+```{r}
+ggplot(sleep) +
+  geom_histogram(binwidth = 1, aes(x = alcohol_consumption), fill = 'green', color = 'black') +
+  labs(title = 'Distribution of Alcohol Consumption', x = 'Alcohol Consumption', y = 'Frequency')
+```
+
+```{r}
+ggplot(sleep) +
+  geom_histogram(binwidth = 1, aes(x = exercise_frequency), fill = 'purple', color = 'black') +
+  labs(title = 'Distribution of Exercise Frequency', x = 'Exercise Frequency', y = 'Frequency')
+```
+
+### After reviewing the bar graphs above, I decided to fill the NA values with the mean in all four categories (awakenings, caffeine_consumption, alcohol_consumption, and exercise_frequency). The reasoning behind this decision is that I believe dropping the columns and/or replacing the NA values with 0 will take away the integrity of the testing of my hypothesis (skewing the data).
+
+```{r}
+sleep$awakenings[is.na(sleep$awakenings)] <- mean(sleep$awakenings, na.rm=TRUE)
+
+```
+
+```{r}
+sleep$caffeine_consumption[is.na(sleep$caffeine_consumption)] <- mean(sleep1$caffeine_consumption, na.rm=TRUE)
+```
+
+```{r}
+sleep$alcohol_consumption[is.na(sleep$alcohol_consumption)] <- mean(sleep$alcohol_consumption, na.rm=TRUE)
+```
+
+```{r}
+sleep$exercise_frequency[is.na(sleep$exercise_frequency)] <- mean(sleep$exercise_frequency, na.rm=TRUE)
+```
+
+```{r}
+colSums(is.na(sleep))
+```
+
+```{r}
+view(sleep)
+```
+
+### Creating Columns to Establish a Healthy Baseline/T-testing
+
+```{r}
+sleep <- mutate(sleep,
+                healthy_person = caffeine_consumption == 0 & alcohol_consumption == 0 & smoking_status == "FALSE" & exercise_frequency > 0)
+
+
+```
+
+```{r}
+sleep <- mutate(sleep,
+                no_alcohol = alcohol_consumption == 0)
+```
+
+```{r}
+sleep <- mutate(sleep,
+                no_caffeine = caffeine_consumption == 0)
+```
+
+```{r}
+sleep <- mutate(sleep,
+                no_exercise = exercise_frequency == 0)
+```
+
+```{r}
+view(sleep)
+```
+
+# Step 4: Hypothesis Visualizations/Testing
+
+```{r}
+ggplot(data = sleep) +
+  geom_boxplot(mapping = aes(sleep_efficiency, healthy_person), fill='green') +
+  labs(title = 'Sleep Efficiency of Healthy Person', x = 'Sleep Efficiency', y = 'Healthy Person')
+```
+
+```{r}
+view(sleep %>% count(healthy_person))
+
+```
+
+```{r}
+ggplot(data = sleep) +
+  geom_boxplot(mapping = aes(sleep_efficiency, alcohol_consumption > 0), fill ='red') +
+  labs(title = 'Sleep Efficiency Based on Alcohol Consumption', x = 'Sleep Efficiency', y = 'Alcohol Consumption (>0)')
+
+```
+
+```{r}
+cor(sleep$sleep_efficiency, sleep$alcohol_consumption > 0) * 100
+```
+
+```{r}
+model <- lm(sleep$sleep_efficiency ~ sleep$alcohol_consumption > 0)
+model
+```
+
+```{r}
+summary(model)
+```
+
+```{r}
+t.test(sleep$sleep_efficiency, sleep$no_alcohol)
+```
+
+# Step 5: Interpretation
+
+Based on the results of the correlation analysis paired with the results of the regression analysis, we have strong evidence that there is statistical significance between alcohol consumption and sleep efficiency (p value = 2.242e-14). With a very small p-value and a large t-value(over (-)2), we can safely state that the null hypothesis can be rejected.
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+# Additional Test
+
+### Ho: REM Sleep Percentage and Alcohol Consumption have No statistical significance to one another.
+
+### Ha: REM Sleep Percentage and Alcohol Consumption have statistical significance to one another.
+
+```{r}
+cor(sleep$rem_sleep_percentage, sleep$alcohol_consumption > 0) * 100
+```
+
+```{r}
+model <- lm(sleep$rem_sleep_percentage ~ sleep$alcohol_consumption > 0)
+model
+```
+
+```{r}
+summary(model)
+```
+
+# Interpretation
+
+Based on the results of the correlation analysis paired with the results of the regression analysis, we do not have strong evidence that there is a statistical significance between alcohol consumption and rem sleep percentage (p value = 0.326). With a relatively high p-value and a relatively small t-value, we fail to reject the null hypothesis.
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+# Additional Test
+
+### Ho: Sleep Efficiency and Smoking Status have No statistical significance to one another.
+
+### Ha: Sleep Efficiency and Smoking Status have statistical significance to one another.
+
+```{r}
+cor(sleep$sleep_efficiency, sleep$smoking_status == TRUE) * 100
+```
+
+```{r}
+model <- lm(sleep$sleep_efficiency ~ sleep$smoking_status == TRUE)
+model
+```
+
+```{r}
+summary(model)
+```
+
+# Interpretation
+
+Based on the results of the correlation analysis paired with the results of the regression analysis, we have strong evidence that there is statistical significance between smoking status and sleep efficiency (p value = 3.29e-10). With a very small p-value and a large t-value(over (-)2), we can safely state that the null hypothesis can be rejected.
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+# Additional Test
+
+### Ho: Sleep Efficiency and Caffeine Consumption have No statistical significance to one another.
+
+### Ha: Sleep Efficiency and Caffeine Consumption have statistical significance to one another.
+
+```{r}
+cor(sleep$sleep_efficiency, sleep$caffeine_consumption > 0) * 100
+```
+
+```{r}
+model <- lm(sleep$sleep_efficiency ~ sleep$caffeine_consumption > 0)
+model
+```
+
+```{r}
+summary(model)
+```
+
+# Interpretation
+
+Based on the results of the correlation analysis paired with the results of the regression analysis, we have evidence that there is not a statistical significance between caffeine consumption and sleep efficiency (p value = .691). With a p-value greater than .05 and a small t-value, we fail to reject the null hypothesis.
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+# Final Test
+
+### Ho: Sleep Efficiency and a Healthy Person (no alcohol, no caffeine, non-smoker, and exercise frequency greater than 0) have No statistical significance to one another.
+
+### Ha: Sleep Efficiency and a Healthy Person have statistical significance to one another.
+
+```{r}
+cor(sleep$sleep_efficiency, sleep$healthy_person) * 100
+```
+
+```{r}
+model <- lm(sleep$sleep_efficiency ~ sleep$healthy_person)
+model
+```
+
+```{r}
+summary(model)
+```
+
+# Interpretation
+
+Based on the results of the correlation analysis paired with the results of the regression analysis, we have evidence that there is a highly statistical significance between a healthy person and sleep efficiency (p value = 2.87e-06). With a very small p-value and a large t-value(over (-)2), we can safely state that the null hypothesis can be rejected.
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+# Overall Report Interpretation
+
+With the results of the analyses above, we have observed sleep efficiency relating to healthy people, people whom only consumed alcohol, people whom only consumed caffeine, and people whom smoke. It has been discovered through this study/dataset that consuming alcohol had the greatest negative effect on sleep efficiency (coefficient = -34.87896%) and being a smoker (coefficient = -29.00258%) was next with a moderate negative correlation on sleep efficiency. In addition, caffeine had a weak positive correlation.
